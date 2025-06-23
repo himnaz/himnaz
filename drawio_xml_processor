@@ -1,0 +1,55 @@
+import xml.etree.ElementTree as ET
+
+def parse_drawio_to_sql(drawio_file):
+    tree = ET.parse(drawio_file)
+    root = tree.getroot()
+
+    tables = {}
+    relationships = []
+
+    # Extract tables and columns
+    for elem in root.findall('.//mxCell'):
+        if 'value' in elem.attrib and ('PK' in elem.attrib['value'] or 'FK' in elem.attrib['value']):
+            value = elem.attrib['value']
+            # Example format: "Customers (id PK, name VARCHAR(50), email FK)"
+            parts = value.split('(')
+            table_name = parts[0].strip()
+            columns_str = parts[1].replace(')', '').strip()
+            columns = [col.strip() for col in columns_str.split(',')]
+            
+            tables[table_name] = []
+            for col in columns:
+                col_parts = col.split()
+                col_name = col_parts[0]
+                col_type = col_parts[1] if len(col_parts) > 1 else 'VARCHAR(255)'
+                is_pk = 'PK' in col
+                is_fk = 'FK' in col
+                tables[table_name].append({
+                    'name': col_name,
+                    'type': col_type,
+                    'is_pk': is_pk,
+                    'is_fk': is_fk
+                })
+
+    # Generate SQL
+    sql_output = []
+    for table_name, columns in tables.items():
+        create_table_sql = f"CREATE TABLE {table_name} (\n"
+        pk_columns = []
+        for col in columns:
+            col_def = f"    {col['name']} {col['type']}"
+            if col['is_pk']:
+                col_def += " PRIMARY KEY"
+            if col['is_fk']:
+                # Assume FK references another table (simplified)
+                col_def += ", -- TODO: Add FOREIGN KEY manually"
+            create_table_sql += col_def + ",\n"
+        create_table_sql = create_table_sql.rstrip(",\n") + "\n);"
+        sql_output.append(create_table_sql)
+
+    return "\n\n".join(sql_output)
+
+# Example usage
+drawio_file = "erd.drawio"  # Replace with your file
+sql_ddl = parse_drawio_to_sql(drawio_file)
+print(sql_ddl)
