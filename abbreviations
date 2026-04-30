@@ -23,6 +23,8 @@ UPL   --- Unsecured Personel Loans
 PCSM
 QRG
 CIAS   ---   Consumer CAIS (Credit Account Information Sharing) is a dataset submitted to UK Experian Credit Bureau containing records of consumers' credit commitments whether defaulted, settled or active and, where appropriate, a month on month indication of the payment performance.
+IV   -- primarily refers to Information Value, a statistical measure used in credit risk modelling to rank the predictive power of variables. It is often calculated alongside Weight of Evidence (WoE) to assist in risk driver selection.
+Additionally, IV relates to Internal Validation (or IVT), the process of validating models to manage model risk. The IV Next regime introduced a new framework for managing model weaknesses, categorising them as **Findings
 IVT  -- refers to Internal Validation, a team responsible for assessing model performance to ensure they are fit for purpose. They perform periodic validations, which involve running standard tests, generating aggregated metrics, and producing validation reports.
 EBA  -- European Banking Authority
 NDD  -- New Default Definition   ---  https://santander-group-uk.atlassian.net/wiki/spaces/AVALON/pages/236580230/Risk+Data+Dictionary
