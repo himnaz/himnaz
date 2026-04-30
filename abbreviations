@@ -123,6 +123,9 @@ NCL  -- Net Credit Loss = monthly change in ECL + Write Offs
 PCA
 PD  --  probability of default (PD)
 PWOD stands for Probability of Write-off Given Default. It is a key component used in IFRS9 and Loss Given Default (LGD) calculations to estimate the likelihood that an account will reach a write-off state once it has defaulted.
+PDO (Points to Double the Odds) is a project parameter used to scale and calibrate credit scorecards. It defines the number of points required to double the odds of a specific outcome, such as a default.
+
+In scorecard development, PDO is used alongside metrics like Points at odds 16:1 to ensure success criteria for calibration are met. It is monitored across various populations, including development and holdout samples, to maintain model accuracy and stability
 LGD --  loss given default (LGD)
 LTV -- Loan to Value
 
@@ -166,6 +169,21 @@ WOE -- Weight of evidence
 IV  -- Information Value
 SVM  -- Support vector models
 
+========================Rating Models================================
+1)NFQM-- is a specific credit risk rating model used within corporate data transformation and tracking processes. It is identified by the model version MO21354V1R0.
+The model is utilised to generate internal customer ratings, which are categorised as either Approved or Expired. Within data analytics pipelines, NFQM is ranked alongside other models, such as IPRE and Global Corporate, to determine a customer's main rating type and
+
+2)SH-- primarily refers to Safe Harbour, a resilient and isolated network environment designed for service recovery during cyber incidents. It operates independently of production infrastructure to allow for the investigation and cleaning of malware from affected services.
+Additionally, SH is used as a prefix for unique user accounts (e.g., SH<staff number>) defined on Entra ID for accessing this environment. In a technical context, .sh also denotes shell script files used for
+3)LBO -- stands for Leveraged Buy Out. It refers to a type of corporate lending and finance, often associated with Leveraged Finance or Global LBO models
+4) IPRE stands for Income Producing Real Estate. It refers to a specific segment within corporate and commercial risk, often associated with specialised lending.
+In risk management, IPRE involves various regulatory and economic models, including:
+Rating Models: Used to assign risk ratings such as Strong, Good, Satisfactory, or Weak.
+PD and LGD Calculations: Models for Probability of Default and Loss Given Default, specifically for Economic Capital
+5) SME rating
+6) CCT
+
+
 Micro Models -- 
 
 AHP
@@ -177,3 +195,5 @@ Causal AI
 ==============================IFRS9===============================
 https://www.esrb.europa.eu/pub/pdf/wp/esrb.wp92~bf769a68b8.en.pdf ---- The cyclicality in SICR: mortgage modelling under IFRS 9
 dynamic deliquency
+https://www.bis.org/  -- Basel website
+https://www.eba.europa.eu/homepage  -- european banking authority
