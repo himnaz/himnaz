@@ -1,0 +1,455 @@
+UK DQ Assessment control development
+
+Please find below the specific examples of DQ assessment controls we would expect the UK to develop.
+
+
+________________________________________
+Business Consistency checks (Perimeter validation / exposure eligibility) — UK FIRB Corporates Other/SME
+Perimeter validation: “Corporates Other/SME FIRB Approach: non-specialised trading companies based in the UK that do not fall under the Global Corporate Model perimeter (defined as turnover ≥ £500m).”
+BC-01 — Explicit exclusion of Global Corporate Model by Turnover
+•	Rule: If Turnover ≥ 500m GBP, the record should not be included in the FIRB Corporates Other/SME RDS (or should be clearly marked as non-eligible).
+•	Fields: Turnover, Segment, Portfolio.
+•	Outputs / evidence:
+o	% of RDS records with Turnover ≥ 500m (expected to be ~0).
+o	Exception list with reason codes (if any).
+•	Clarification to confirm: Can you confirm Turnover is always in GBP (or otherwise how currency/unit standardisation is ensured)?
+________________________________________
+BC-02 — Inclusion control: eligible records should not be unintentionally excluded
+•	Rule: Records with Turnover < 500m and Portfolio/Segment aligned to the approved FIRB Corporates Other/SME scope should not be excluded from the RDS unless there is a documented exclusion reason.
+•	Fields: Turnover, Portfolio, Segment, Borrower_ID, Date.
+•	Outputs / evidence:
+o	Monthly coverage ratio = (# records in RDS)/(# eligible records in local systems).
+o	Breakdown of excluded eligible records by reason (if applicable).
+________________________________________
+BC-03 — UK geography validation (UK-based perimeter)
+•	Rule: All RDS records should satisfy the agreed “UK-based” definition
+•	Fields needed: We do not see any “Country”-like fields in the data dictionary. How has this perimeter been calculated? Typically something like country, booking_country, incorporation_country, or equivalent would be used.
+•	Outputs / evidence:
+o	% records failing UK geography rule (expected to be 0 or fully explained).
+•	Clarification to confirm: Which field(s) are being used to evidence “UK-based”, and are they already present in the perimeter extract / RDS? If not, what is the agreed proxy to demonstrate UK scope?
+________________________________________
+BC-04 — Sector eligibility: exclude non-applicable sectors (e.g., financials / holdings), if required by scope
+•	Rule (to confirm with Methodology): If Internal_sector indicates sectors outside “non-specialised trading companies” (e.g., financial sector or holding-type sectors), those records should be excluded or handled under explicit exceptions.
+•	Fields: Internal_sector, Portfolio, Segment.
+•	Outputs / evidence:
+o	List of “out-of-scope” sector codes present in the RDS (if any), with justification.
+•	Clarification to confirm: Do you have an approved sector → eligibility mapping (reference table) that defines which Internal_sector values are in/out of scope?
+________________________________________
+BC-05 — Non-specialised vs specialised lending / product eligibility (where applicable)
+•	Rule: Exposures that fall under specialised lending / non-trading definitions (as per scope) should be excluded, or explicitly flagged for separate treatment.
+•	Fields typically required: We do not see any fields such as exposure_class, product_type, specialised_lending_flag, counterparty_type (or equivalents). We assume they were probably used in the extraction itself, but could you please confirm what fields did you use to determine the perimeter?
+•	Outputs / evidence:
+o	% of records meeting specialised/out-of-scope criteria that appear in the RDS.
+•	Clarification to confirm: Which fields are being used to identify specialised lending / product eligibility, and are they already present in the data extracted for the RDS build?
+________________________________________
+BC-06 — (recommendation to make the perimeter defensible) Minimum perimeter audit fields
+To make Business Consistency evidence robust (especially for supervision), it is typically helpful that the RDS/perimeter extract contains:
+•	eligibility_flag (Y/N)
+•	exclusion_reason (closed list of codes)
+Completeness Checks – Validation of Data Completeness, Coverage, and Representativeness (UK)
+
+Perimeter: Final RDS population for the FIRB Corporates Other / SME UK model
+________________________________________
+C-01 — Functional completeness for all RDS variables
+•	Rule: For each variable in the Data Dictionary, compute the percentage of missing (null or equivalent) values by month over the full observation window.
+•	Applies to: All variables (identifiers, segmentation drivers, financial, behavioural, bureau, qualitative).
+•	Outputs / evidence:
+o	Monthly missingness per variable (%).
+o	Identification of variables with persistent or structurally high missingness.
+For variables with non-negligible missingness, can you confirm whether:
+o	Missing values are structural/expected (e.g. not applicable by design, new borrower, etc.), or
+o	Missing values indicate data availability or ingestion gaps?
+________________________________________
+C-02 — Identification and governance of “equivalent missing” values
+•	Rule: Identify values that technically exist but functionally behave as missing (e.g. zeros, default technical codes, extreme placeholders).
+•	Applies to: Numeric variables (ratios, balances, arrears metrics), categorical encoders, qualitative scores.
+•	Outputs / evidence:
+o	List of equivalent-missing patterns per variable (e.g. 0, -999, extreme constants).
+o	% incidence by month.
+•	Recommendation:
+For auditing purposes, it would be helpful if there was a documented rule defining which values are treated as “equivalent to missing” for each variable, and how they are handled downstream (binning, imputation, neutral category)?
+________________________________________
+C-03 — Historical completeness across the full modelling window
+•	Rule: For each variable, verify the first and last available observation date and compare it with the required historical depth for a given model.
+•	Applies to: All variables.
+•	Outputs / evidence:
+o	Coverage “matrix”: variable × month.
+o	Explicit identification of start dates later than “X” (depends on Rating or PD data).
+•	Clarification to confirm:
+For variables with shorter history:
+o	Is the reduced depth intentional and accepted by Methodology?
+o	Are these variables excluded from development periods where history is insufficient, or is a proxy/alternative used?
+________________________________________
+This check is not mandatory since it can be directly evaluated in the historical completeness, but this view might be helpful to ensure targeted Remediation Plans if needed.
+C-04 — Completeness stability over time (temporal consistency)
+•	Rule: Assess whether missingness levels are stable over time or show structural breaks (sudden improvements/deteriorations).
+•	Applies to: All variables, with particular focus on financial ratios, behavioural aggregates, and bureau data.
+•	Outputs / evidence:
+o	Time series of missingness % per variable.
+o	Flags for sudden step-changes.
+•	Clarification to confirm:
+Where step-changes are observed, can you confirm whether these correspond to known events (system changes, new feeds, methodology updates), and are these changes documented?
+________________________________________
+This check is not mandatory but it might be helpful to ensure targeted Remediation Plans if needed.
+C-05 — Completeness by segment and borrower characteristics
+•	Rule: Evaluate missingness by key segmentation dimensions to detect representativeness bias.
+•	Dimensions to test (at minimum):
+o	Segment
+o	Internal_sector
+o	Turnover bands
+o	Exposure size bands (Total_Exposure)
+o	Rating band (if available)
+•	Applies to: Key financial, behavioural, bureau, and qualitative drivers.
+•	Outputs / evidence:
+o	Missingness % by segment/dimension.
+o	Identification of asymmetric patterns (e.g. small corporates systematically missing financials).
+•	Clarification to confirm:
+If completeness differs materially by segment, is this:
+o	Expected by design (e.g. simplified data for smaller firms), or
+o	A potential source of bias that requires mitigation or documentation?
+________________________________________
+C-06 — Completeness of segmentation and governance drivers
+•	Rule: Variables used to define or evidence the model perimeter must be near-complete.
+•	Critical fields include: Turnover, Portfolio, Segment, Internal_sector, Borrower_ID, Date.
+•	Outputs / evidence:
+o	Missingness % for each segmentation driver.
+•	Clarification to confirm:
+How are cases handled where segmentation drivers are missing or inconsistent? Is there a fallback rule, and is it formally documented?
+________________________________________
+C-07 — Coverage of the eligible population in the RDS
+•	Rule: Quantify how much of the eligible population is ultimately represented in the RDS.
+•	Metrics:
+o	% of eligible borrowers included (count).
+o	% of eligible exposure included (Total_Exposure).
+•	Outputs / evidence:
+o	Monthly coverage ratios.
+o	Trend over time.
+•	Clarification to confirm:
+Are exclusions driven mainly by missing critical variables, explicit business rules, or technical constraints? Is this split visible and auditable?
+________________________________________
+C-08 — Completeness of derived variables vs input availability
+•	Rule: For calculated variables (MA, YOY, ratios), assess whether missingness is driven by:
+o	Missing inputs, or
+o	Insufficient historical depth.
+•	Applies to: MA_* and YOY_* variables, behavioural aggregates.
+•	Outputs / evidence:
+o	Comparison of missingness between inputs and derived outputs.
+•	Clarification to confirm:
+Is there a minimum-history rule (e.g. at least 2 financial statements) that governs calculation, and is this consistently applied and documented?
+________________________________________
+C-09 — Flags to govern completeness-related exclusions and adjustments
+•	Rule: Ensure the RDS includes governance fields to track completeness-driven actions.
+•	Expected fields (or equivalents):
+o	data_quality_flag
+o	exclusion_flag
+o	exclusion_reason
+o	adjustment_flag
+•	Outputs / evidence:
+o	Confirmation of field availability and usage.
+•	Clarification to confirm:
+If such flags are not currently available, how is completeness-driven exclusion or adjustment evidenced during validation or supervision?
+________________________________________
+If you want, the next step could be:
+•	translating these into quantitative thresholds and severity levels, or
+•	mapping each check to specific variable families (financial, behavioural, bureau, qualitative) with expected outcomes for Cycle 1 vs Cycle 2.
+________________________________________
+Technical Consistency Checks — Validity, Range, Format, Uniqueness (UK)
+
+Perimeter: Final RDS population
+Objective:
+To confirm that all variables included in the RDS comply with basic technical rules (format, valid ranges, uniqueness), are interpretable without ambiguity, and can be safely used for estimation, validation, and supervisory review without manual correction.
+________________________________________
+1. Identifier, Scope, and Reference Fields
+Variables
+•	Borrower_ID
+•	Date
+•	Portfolio
+•	Segment
+•	Internal_sector
+•	GROUP_CODE
+Format & validity checks
+•	Borrower_ID
+o	Must be non-null
+o	Must be unique per borrower
+o	Must not change over time for the same legal entity
+•	Date
+o	Valid date format
+o	Must correspond to month-end
+o	No dates outside Dec-2020 to Dec-2024
+•	Categorical fields (Portfolio, Segment, Internal_sector)
+o	Values must belong to a closed and documented domain
+o	No free text, spelling variants, or legacy codes
+
+Example check:
+Verify that Segment only contains approved values for the FIRB Corporates Other / SME perimeter and that no unexpected categories appear historically.
+________________________________________
+2. Exposure, Balance, and Amount Variables (Monetary)
+Variables
+•	Total_Exposure
+•	final_group_expsr
+•	Turnover
+•	Balance
+•	Arrears
+•	All Min / Max / Avg balance and arrears variables
+•	Bureau monetary variables (net_worth, cc_gb_24, etc.)
+Range checks
+•	Must be numeric
+•	Must not contain text, symbols, or formatting characters
+•	Expected sign:
+o	Exposure, balances, arrears → ≥ 0
+o	Net worth → can be negative, but within plausible bounds
+•	Extreme values:
+o	Identify implausible magnitudes (e.g. balance >> total exposure, turnover orders of magnitude above peers)
+Example checks
+•	Balance ≤ Total_Exposure
+•	Arrears ≤ Balance
+•	final_group_expsr ≥ Total_Exposure when GROUP_CODE is populated
+•	Flag values above the 99.9th percentile for review
+________________________________________
+3. Default, NPL, Forbearance, and Status Flags
+Variables
+•	Default, Default_12m
+•	re_npl, np_npl, wo_npl, ff_npl, dr_npl, su_npl*, npl_probation, fb_probation
+Format & validity checks
+•	Must be binary (0/1, Y/N or equivalent)
+•	No nulls unless explicitly justified
+•	No unexpected values (e.g. 2, -1, “Yes”, blank)
+Example check:
+Verify that all default and NPL flags only take values in {0,1} and that missing values are explicitly justified as “not applicable” rather than data gaps.
+________________________________________
+4. Financial Ratios (Core, SME, CCT, CCB)
+Variables
+All ratio variables, including:
+•	GC_Ratio_*
+•	CCT_Ratio_*
+•	SME_Ratio_*
+•	CCB_Ratio_*
+•	Ratio_37
+Range & plausibility checks
+•	Must be numeric
+•	Identify:
+o	Division-by-zero artefacts
+o	Extreme absolute values (very large positives or negatives)
+•	Expected economic ranges (indicative, not hard caps):
+o	Liquidity ratios: typically ≥ 0
+o	Leverage ratios: typically ≥ 0, but may spike with low denominators
+o	Profitability ratios: negative values possible, but not unbounded
+Example checks
+•	Flag ratios with absolute values above predefined thresholds (e.g. |ratio| > 1,000)
+•	Identify cases where denominator is close to zero
+•	Confirm whether negative numerator/denominator combinations are explicitly allowed and documented
+________________________________________
+5. Moving Averages (MA_*) and YoY Variables
+Variables
+•	MA_*
+•	YOY_*
+Format & range checks
+•	Must be numeric
+•	Should not exist when insufficient history exists
+•	YoY values:
+o	Check for technical placeholders (e.g. -99)
+o	Confirm that extreme YoY values are not artefacts of near-zero denominators
+Example checks
+•	MA variables should be missing if fewer than two valid historical observations exist
+•	YoY values outside a reasonable band (e.g. > ±1,000%) flagged for review
+________________________________________
+6. Behavioural Counts, Durations, and Percentages
+Variables
+•	DPD
+•	MonthsSince_*
+•	Consec_*
+•	Count_*
+•	PCT_*
+Range & format checks
+•	Count / duration variables:
+o	Integer
+o	≥ 0
+•	Percentage variables:
+o	Numeric
+o	Expected range: 0–100 (or 0–1 if explicitly defined so)
+Example checks
+•	PCT_ArrGT30_12m ∈ [0,100]
+•	MonthsSince_DPDGT90 ≥ 0
+•	No negative counts or percentages >100
+________________________________________
+7. Qualitative Questionnaire Variables
+Variables
+•	SMEQL_RQS_*
+Format & domain checks
+•	Must belong to the defined scale (e.g. -2 to +2)
+•	No free text or unexpected values
+•	Check for:
+o	Excessive concentration at neutral (e.g. 0)
+o	Missing vs neutral clearly distinguishable
+Example check:
+Confirm that qualitative scores only take values in {-2, -1, 0, 1, 2} and that missing values are not implicitly encoded as neutral.
+________________________________________
+8. Bureau Scores and Categorical Bureau Flags
+Variables
+•	credit_rat
+•	comm_delphi_scr
+•	CC_GB_04, cc_gb_34
+•	Other bureau indicators
+Format & validity checks
+•	Scores:
+o	Numeric
+o	Within provider-defined range
+•	Flags:
+o	Closed set of allowed values
+o	No undocumented codes
+
+Example check:
+Validate that credit_rat values fall within the official Experian scale and that any missing or blank values have a documented semantic meaning.
+________________________________________
+9. Uniqueness and Duplicate Records
+Variables involved
+•	Borrower_ID
+•	Date
+Uniqueness checks
+•	One record per Borrower_ID per Date
+•	No duplicate rows with identical keys
+•	No multiple ratings per borrower per month unless explicitly justified
+
+Example check:
+Verify that there are no duplicate records for the same Borrower_ID and Date combination in the RDS.
+________________________________________
+10. Consistency with Data Dictionary
+Applies to
+•	All variables
+Checks
+•	Variable name, definition, unit, and sign must match the Data Dictionary
+•	No undocumented transformations
+•	No reused variables with changed meaning
+Example check:
+Confirm that all ratio variables are expressed in the units and direction described in the approved Data Dictionary and have not changed definition over time.
+________________________________________
+Internal Consistency Checks (UK) — Logical Cross-Field Validation
+Perimeter: Final RDS population (one record per Borrower_ID per Date)
+Objective: Detect internal contradictions between key fields (defaults, arrears/DPD, behavioural histories, segmentation, exposures, financial ratios), ensuring the dataset is logically coherent and defensible under internal validation / supervisory review.
+________________________________________
+1) Record-key integrity (prerequisite for all internal checks)
+IC-01 — Uniqueness of borrower-month
+•	Rule: One and only one record per (Borrower_ID, Date)
+•	Why: Any duplicated borrower-month breaks behavioural derivations and can double-count exposures/defaults.
+•	Check: count(*) grouped by (Borrower_ID,Date) must be 1.
+IC-02 — Time continuity (optional but strongly recommended)
+•	Rule: For each Borrower_ID, Date should progress monthly without “future” backfills inside the same extract.
+•	Why: Behavioural “months since” and consecutive metrics assume correct month ordering.
+•	Check: gaps in Date sequence for borrowers with behavioural variables populated.
+________________________________________
+2) Default / NPL flags vs behavioural delinquency (DPD / arrears)
+IC-03 — Default should be compatible with delinquency signals
+•	Rule (conditional): If Default = 1, then at least one of:
+o	DPD > 0, or
+o	Arrears > 0, or
+o	wo_npl=1, np_npl=1, dr_npl=1, su_npl(1/2/3)=1, ff_npl=1
+•	Why: Default typically coincides with arrears/NPL-type flags (unless there is a pure UTP / subjective default pathway). This check identifies defaults that look “unexplained”.
+•	Exception: If the UK framework allows Default=1 via UTP with DPD=0 and Arrears=0, this must be explicitly documented; otherwise it will look like a data mapping issue.
+
+IC-04 — No delinquency history but DPD > 0
+•	Rule: If DPD > 0 then MonthsSince_DPDGT0 must be 0 (or a defined technical representation of “current month event”).
+•	Why: If borrower is currently delinquent, “months since DPD >0” cannot be non-zero or missing (unless the variable definition differs).
+•	Check: DPD>0 AND MonthsSince_DPDGT0 NOT IN (0, allowed_codes).
+IC-05 — Arrears amount should align with DPD
+•	Rule (conditional):
+o	If Arrears > 0, then DPD > 0 is generally expected.
+•	Why: Positive arrears typically implies late payment days >0. Violations may point to arrears currency issues, timing misalignment, or incorrect DPD derivation.
+•	Exception: If arrears are defined “at month end” while DPD is “at due date”, this could legitimately occur but should be documented.
+IC-06 — If DPD = 0, arrears-based “consecutive arrears” should be 0
+•	Rule: If DPD = 0 and Arrears = 0, then:
+o	Consec_ArrGT0 = 0
+o	Consec_ArrGT30/60/90 = 0
+•	Why: Consecutive arrears counters should not show ongoing delinquency if current month is clean.
+•	Exception: If those counters are computed on a window ending at prior month, then they should be consistent with that definition (needs explicit confirmation).
+________________________________________
+3) “MonthsSince_*” variables vs threshold indicators
+
+IC-07 — Ordering constraints between thresholds
+•	Rule: MonthsSince_DPDGT90 ≥ MonthsSince_DPDGT60 ≥ MonthsSince_DPDGT30 ≥ MonthsSince_DPDGT0
+•	Reason: It’s easier to have been delinquent >0 than >30, etc. In principle, a more severe threshold cannot be “more recent” unless definitions differ.
+•	Exception: If each MonthsSince variable is computed from independent event definitions, then UK should document that (otherwise supervisors will expect monotonicity).
+IC-08 — “Months since DPD>30” cannot be 0 if DPD is below threshold
+•	Rule: If DPD <= 30, then MonthsSince_DPDGT30 cannot be 0 (it should be >0 or missing depending on meaning).
+•	Why: Zero implies “this month had DPD >30”.
+•	Check: DPD<=30 AND MonthsSince_DPDGT30=0.
+IC-09 — MonthsSince_MaxArr vs MaxArr values
+•	Rule (conditional): If MonthsSince_MaxArr = 0, then current arrears should be equal to the “max arrears to date” metric (MaxArr_ALL) or at least equal to the max observed in the window that defines it.
+•	Why: “Months since max arrears” being 0 means this month is the max event.
+•	Note: Because you have multiple max definitions (3m/6m/12m/ALL), UK should specify which one MonthsSince_MaxArr relates to.
+________________________________________
+4) Behavioural min/max/avg variables vs base balances/arrears
+IC-10 — Balance must lie within min/max window when window exists
+•	Rule: If MinBal_3m and MaxBal_3m are populated then:
+o	MinBal_3m ≤ Balance ≤ MaxBal_3m
+•	Why: If not, the rolling window stats are inconsistent with the underlying balance series.
+•	Apply similarly for 6m, 12m, ALL.
+IC-11 — Arrears must lie within min/max window when window exists
+•	Rule: If MinArr_3m and MaxArr_3m are populated then:
+o	MinArr_3m ≤ Arrears ≤ MaxArr_3m
+•	Why: Same as above; detects misalignment in window calculation.
+IC-12 — Max/Min hierarchy across windows
+•	Rule (conditional):
+o	MaxBal_ALL ≥ MaxBal_12m ≥ MaxBal_6m ≥ MaxBal_3m
+o	MinBal_ALL ≤ MinBal_ALL(12m) ≤ MinBal_6m ≤ MinBal_3m (depending on how “ALL” is defined; if ALL=12m then align accordingly)
+•	Why: Wider windows should not have smaller maxima / larger minima unless “ALL” is not actually longer.
+•	Action: If UK defines ALL as “to date” and not capped, this should hold. If ALL is 12m, then naming should be clarified.
+IC-13 — Percent-of-months vs counts consistency
+•	Rule: For a 12m window:
+o	Count_ArrGT30_12m ≈ round(PCT_ArrGT30_12m * 12 / 100) (allow tolerance of ±1 due to rounding)
+•	Why: These are two views of the same concept. Large mismatches imply inconsistent windowing or scaling (0–1 vs 0–100).
+•	Apply similarly for GT0/GT60/GT90 and 3m/6m.
+________________________________________
+5) Behavioural deltas and consecutive metrics vs actual month-on-month changes
+IC-14 — Increase/Decrease variables should not both be positive
+•	Rule: For balances:
+o	Not allowed: Increase_In_Bal > 0 AND Decrease_In_Bal > 0 in the same record.
+o	Additionally: if Increase_In_Bal > 0 then Decrease_In_Bal should be 0 (or missing), and vice versa.
+•	Why: A value can’t increase and decrease simultaneously; flags derivation logic bugs.
+IC-15 — Same logic for arrears
+•	Rule: Not allowed: Increase_In_Arr > 0 AND Decrease_In_Arr > 0
+•	Why: Same as above.
+IC-16 — Consecutive counters vs “no change”
+•	Rule: If ConsecNoChge_Arr > 0, then Increase_In_Arr = 0 and Decrease_In_Arr = 0 should be expected.
+•	Why: “No change” counters should align with delta fields.
+________________________________________
+6) Exposure, group exposure, and grouping logic
+IC-17 — Group exposure should be coherent with individual exposure
+•	Rule (conditional): If GROUP_CODE is populated, then final_group_expsr ≥ Total_Exposure
+•	Why: Group exposure should be at least as large as a member exposure.
+•	Exception: If final_group_expsr is “allocated” rather than aggregated, UK should document that (otherwise this is a red flag).
+IC-18 — If GROUP_CODE is null, group exposure should be null or equal to borrower exposure
+•	Rule: If GROUP_CODE is null/empty, then final_group_expsr should be null or equal to Total_Exposure (depending on design).
+•	Why: Avoids accidental carryover of group values to standalone borrowers.
+________________________________________
+7) Segment / Portfolio vs variable applicability (structural consistency)
+These are “internal consistency” in the sense of structural applicability across fields.
+IC-19 — Qualitative block applicability vs Segment
+•	Rule (conditional): If Segment/Portfolio indicates SME questionnaire is required, then SMEQL_RQS_* should not be null (or should follow the documented defaulting logic).
+•	Why: Prevents silent dilution of the qualitative block due to missingness driven by process gaps rather than “true neutral”.
+IC-20 — Financial ratio families should align with portfolio assignment
+•	Rule (conditional):
+o	If a borrower is tagged as SME model population, SME ratio set should be present and GC/CCT may be irrelevant (or vice versa).
+•	Why: Prevents mixing submodel drivers due to incorrect portfolio mapping.
+•	Note: UK will need to confirm which portfolio uses GC vs CCT vs SME vs CCB—if this mapping is not available in the current dataset, it is a gap (a segmentation driver or model_id flag may be needed).
+________________________________________
+8) Financial ratio cross-checks (limited without raw inputs)
+Because the RDS contains ratios but not the underlying statement line items, internal checks are necessarily lighter, but still possible.
+IC-21 — Duplicate ratio definitions should not diverge materially
+•	Rule: SME_Ratio_127 (EBITDA/Total Assets *100) and Ratio_37 (EBITDA/Total Assets) are definitionally similar; their values should be proportional (≈ x100), unless one uses scaling and the other does not.
+•	Why: Detects unit inconsistencies (percent vs raw ratio).
+•	Check: Compare distributions or enforce abs(SME_Ratio_127 - 100*Ratio_37) < tolerance where both exist.
+
+IC-22 — Moving average should be “between” current and lag when lag exists
+•	Rule (conditional): MA ratios should not systematically exceed both the current and prior-year values (when both exist).
+•	Why: Moving average should be an average, so it must lie between inputs unless different handling applies.
+•	Gap: If the prior-year raw ratios are not stored, UK can only validate MA vs current (limited) unless lag values are also in RDS.
+________________________________________
+9) Bureau variables: consistency between “time since” and existence of events
+IC-23 — Time-since derogatory should not exist without derog context
+•	Rule (conditional): If ts_last_derogatory_dat is populated with a low number (recent), then derog-related flags (e.g. parent_company_derog_dets='Y') should be compatible where they refer to the same concept.
+•	Why: Prevents contradictory encoding where “time since event” indicates an event but the flag says no event (or vice versa).
+•	Note: Because some bureau variables use “blank” to mean “not retrievable”, UK should explicitly encode this semantic and adjust the check accordingly.
+________________________________________
+Potential data gaps to flag (for UK to confirm)
+•	If there is no explicit model / submodel identifier (e.g., “GC vs SME vs CCT portfolio tag”), then several structural consistency checks (IC-19/IC-20) can only be partially implemented. UK should confirm whether Portfolio and/or Segment fully determines the applicable driver families, or whether an additional flag is needed in the RDS. We know that you have been working on segmentation variables, they should maybe added to the Dictionary.
+
