@@ -1,0 +1,246 @@
+import pandas as pd
+import hashlib
+import uuid
+import random
+import string
+from typing import List, Union, Optional
+
+class DataAnonymizer:
+    """
+    A class to anonymize specified columns in a dataset.
+    Supports CSV, Excel, and pandas DataFrame inputs.
+    """
+    
+    def __init__(self, data: Union[str, pd.DataFrame], file_type: Optional[str] = None):
+        """
+        Initialize the anonymizer.
+        
+        Args:
+            data: Path to data file or pandas DataFrame
+            file_type: Type of file ('csv' or 'excel'). Only needed if data is a file path.
+        """
+        if isinstance(data, str):
+            if file_type == 'csv':
+                self.df = pd.read_csv(data)
+            elif file_type == 'excel':
+                self.df = pd.read_excel(data)
+            else:
+                # Auto-detect based on file extension
+                if data.endswith('.csv'):
+                    self.df = pd.read_csv(data)
+                elif data.endswith(('.xlsx', '.xls')):
+                    self.df = pd.read_excel(data)
+                else:
+                    raise ValueError("Unsupported file type. Please specify file_type='csv' or 'excel'")
+        else:
+            self.df = data.copy()
+        
+        self.original_df = self.df.copy()
+        
+    def hash_column(self, column_name: str, salt: str = "") -> None:
+        """
+        Anonymize a column using SHA-256 hashing.
+        
+        Args:
+            column_name: Name of column to anonymize
+            salt: Optional salt value to add before hashing
+        """
+        if column_name not in self.df.columns:
+            raise ValueError(f"Column '{column_name}' not found in dataset")
+        
+        self.df[column_name] = self.df[column_name].astype(str).apply(
+            lambda x: hashlib.sha256(f"{x}{salt}".encode()).hexdigest()
+        )
+        print(f"✓ Hashed column: '{column_name}'")
+    
+    def mask_column(self, column_name: str, mask_char: str = '*', 
+                   visible_chars: int = 2, position: str = 'end') -> None:
+        """
+        Mask a column by showing only a few characters.
+        
+        Args:
+            column_name: Name of column to anonymize
+            mask_char: Character to use for masking
+            visible_chars: Number of characters to show
+            position: Where to show visible chars ('start', 'end', or 'both')
+        """
+        if column_name not in self.df.columns:
+            raise ValueError(f"Column '{column_name}' not found in dataset")
+        
+        def mask_value(value):
+            value_str = str(value)
+            if len(value_str) <= visible_chars:
+                return mask_char * len(value_str)
+            
+            if position == 'start':
+                return value_str[:visible_chars] + mask_char * (len(value_str) - visible_chars)
+            elif position == 'end':
+                return mask_char * (len(value_str) - visible_chars) + value_str[-visible_chars:]
+            elif position == 'both':
+                mid = len(value_str) // 2
+                return value_str[:visible_chars] + mask_char * (len(value_str) - 2*visible_chars) + value_str[-visible_chars:]
+            else:
+                raise ValueError("position must be 'start', 'end', or 'both'")
+        
+        self.df[column_name] = self.df[column_name].astype(str).apply(mask_value)
+        print(f"✓ Masked column: '{column_name}'")
+    
+    def fake_column(self, column_name: str, fake_type: str = 'uuid') -> None:
+        """
+        Replace column values with fake/generated data.
+        
+        Args:
+            column_name: Name of column to anonymize
+            fake_type: Type of fake data ('uuid', 'random_string', 'random_int')
+        """
+        if column_name not in self.df.columns:
+            raise ValueError(f"Column '{column_name}' not found in dataset")
+        
+        n_rows = len(self.df)
+        
+        if fake_type == 'uuid':
+            fake_values = [str(uuid.uuid4()) for _ in range(n_rows)]
+        elif fake_type == 'random_string':
+            fake_values = [''.join(random.choices(string.ascii_letters + string.digits, k=10)) 
+                          for _ in range(n_rows)]
+        elif fake_type == 'random_int':
+            fake_values = [random.randint(10000, 99999) for _ in range(n_rows)]
+        else:
+            raise ValueError("fake_type must be 'uuid', 'random_string', or 'random_int'")
+        
+        self.df[column_name] = fake_values
+        print(f"✓ Faked column: '{column_name}' with {fake_type}")
+    
+    def anonymize_columns(self, columns_config: List[Union[str, dict]]) -> None:
+        """
+        Anonymize specified columns based on configuration.
+        
+        Args:
+            columns_config: List of column names or dicts with column configs.
+                          Example: ['name', {'column': 'email', 'method': 'hash'}]
+                          Methods: 'hash', 'mask', 'fake'
+        """
+        for config in columns_config:
+            if isinstance(config, str):
+                # Default to hash method
+                self.hash_column(config)
+            elif isinstance(config, dict):
+                column = config.get('column')
+                method = config.get('method', 'hash')
+                
+                if method == 'hash':
+                    salt = config.get('salt', '')
+                    self.hash_column(column, salt)
+                elif method == 'mask':
+                    mask_char = config.get('mask_char', '*')
+                    visible_chars = config.get('visible_chars', 2)
+                    position = config.get('position', 'end')
+                    self.mask_column(column, mask_char, visible_chars, position)
+                elif method == 'fake':
+                    fake_type = config.get('fake_type', 'uuid')
+                    self.fake_column(column, fake_type)
+                else:
+                    raise ValueError(f"Unknown method: {method}")
+            else:
+                raise ValueError("Each config must be a string (column name) or dict with 'column' key")
+    
+    def save(self, output_path: str, index: bool = False) -> None:
+        """
+        Save the anonymized dataset.
+        
+        Args:
+            output_path: Path to save the anonymized data
+            index: Whether to save the index
+        """
+        if output_path.endswith('.csv'):
+            self.df.to_csv(output_path, index=index)
+        elif output_path.endswith(('.xlsx', '.xls')):
+            self.df.to_excel(output_path, index=index)
+        else:
+            raise ValueError("Output path must end with .csv, .xlsx, or .xls")
+        
+        print(f"✓ Saved anonymized dataset to: {output_path}")
+    
+    def preview(self, n_rows: int = 5) -> None:
+        """Preview the anonymized data."""
+        print("\n" + "="*50)
+        print("ANONYMIZED DATA PREVIEW:")
+        print("="*50)
+        print(self.df.head(n_rows))
+        print("="*50)
+
+def main():
+    """
+    Example usage of the DataAnonymizer class.
+    """
+    # Example 1: Using a DataFrame
+    print("Creating sample dataset...")
+    sample_data = pd.DataFrame({
+        'name': ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Brown'],
+        'email': ['john@example.com', 'jane@example.com', 'bob@example.com', 'alice@example.com'],
+        'phone': ['123-456-7890', '234-567-8901', '345-678-9012', '456-789-0123'],
+        'ssn': ['123-45-6789', '234-56-7890', '345-67-8901', '456-78-9012'],
+        'age': [25, 30, 35, 40]
+    })
+    
+    print("Original data:")
+    print(sample_data)
+    print("\n" + "="*50 + "\n")
+    
+    # Initialize anonymizer
+    anonymizer = DataAnonymizer(sample_data)
+    
+    # Define columns to anonymize with different methods
+    columns_to_anonymize = [
+        'name',  # Will use default hash method
+        {'column': 'email', 'method': 'hash', 'salt': 'my_secret_salt'},  # Hash with salt
+        {'column': 'phone', 'method': 'mask', 'visible_chars': 4, 'position': 'end'},  # Mask showing last 4 digits
+        {'column': 'ssn', 'method': 'mask', 'mask_char': 'X', 'visible_chars': 4, 'position': 'end'},  # Mask SSN
+        {'column': 'age', 'method': 'fake', 'fake_type': 'random_int'},  # Replace age with random integers
+    ]
+    
+    # Anonymize the columns
+    print("Anonymizing columns...")
+    anonymizer.anonymize_columns(columns_to_anonymize)
+    
+    # Preview the result
+    anonymizer.preview()
+    
+    # Save the anonymized dataset
+    # anonymizer.save('anonymized_data.csv')
+    
+    print("\n" + "="*50)
+    print("To use this script with your data:")
+    print("1. Load your data (CSV or Excel)")
+    print("2. Create an anonymizer instance")
+    print("3. Configure columns to anonymize")
+    print("4. Run anonymize_columns()")
+    print("5. Save the result")
+    print("="*50)
+
+if __name__ == "__main__":
+    # Example 2: Load from file (uncomment and modify for your use case)
+    """
+    # Load from CSV file
+    anonymizer = DataAnonymizer('your_data.csv')
+    
+    # Or load from Excel
+    # anonymizer = DataAnonymizer('your_data.xlsx')
+    
+    # Define columns to anonymize
+    columns_to_anonymize = [
+        'customer_name',
+        {'column': 'email_address', 'method': 'hash'},
+        {'column': 'phone_number', 'method': 'mask', 'visible_chars': 3},
+        {'column': 'credit_card', 'method': 'mask', 'mask_char': '#', 'visible_chars': 4, 'position': 'end'},
+        {'column': 'user_id', 'method': 'fake', 'fake_type': 'uuid'},
+    ]
+    
+    # Anonymize
+    anonymizer.anonymize_columns(columns_to_anonymize)
+    
+    # Save result
+    anonymizer.save('anonymized_output.csv')
+    """
+    
+    main()
