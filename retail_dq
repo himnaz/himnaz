@@ -1,0 +1,228 @@
+Data Testing & Validation Document
+
+
+________________________________________
+1. Purpose
+This document defines the structured approach to testing and validating data accuracy, completeness, integrity, and quality within AWS systems.
+The objective is to:
+•	Ensure data correctness before go-live
+•	Validate transformations and integrations
+•	Reduce operational, regulatory, and reputational risk
+•	Provide auditable evidence of validation activities
+________________________________________
+2. Scope
+In Scope
+•	AWS services used (e.g., S3, Glue, Redshift, RDS, Lambda, EMR, Athena, etc.)
+•	Data ingestion pipelines
+•	Transformation logic
+•	Reporting outputs
+•	Downstream integrations
+________________________________________
+4. Roles & Responsibilities
+Role	Responsibility
+Data Engineer	Implement validation scripts, resolve defects
+Data SME	Execute test cases, document results
+Data Owner	Approve validation criteria
+Product SME	Validate business logic and outputs
+	
+	
+________________________________________
+5. AWS Architecture Overview
+Check architecture including:
+•	Data Sources
+•	Ingestion (API, Batch, Streaming)
+•	Storage (S3 buckets, RDS, Redshift)
+•	Transformation (Glue, Lambda, EMR)
+•	Consumption (BI tools, APIs)
+•	Monitoring (CloudWatch, AWS DQ tools)
+________________________________________
+6. Data Quality Dimensions
+The following dimensions will be tested:
+Dimension	Description	Example
+Accuracy	Data matches source truth	Balance equals source system
+Completeness	No missing required data	No NULL in mandatory fields
+Consistency	No conflicting records	Customer ID consistent across systems
+Validity	Conforms to format/rules	Date format YYYY-MM-DD
+Uniqueness	No unintended duplicates	Unique transaction IDs
+Timeliness	Data updated as expected	Daily load completed by 06:00
+________________________________________
+7. Testing Strategy
+ Testing Levels
+•	Unit Testing (Pipeline logic)
+•	Integration Testing (Source to target validation)
+•	System Testing (End-to-end validation)
+•	UAT (Business validation)
+•	Regression Testing (Post-change validation)
+
+
+
+
+
+
+
+
+
+
+
+Unit Testing:
+Test ID	Test Description	Method	Expected Result	Actual Result
+1.		Compare Mortgage Application Scorecard View and SAS Dataset for a date range and find if there are no missing application id(s) on either side for a sample date range.	SQL Query:
+applicationid_side_detail.sql
+All application IDs in SAS Dataset should be present in Application Scorecard View	Identified some application IDs which are present in SAS and not in AWS
+
+Test result:
+missing_aws_2024.xlsx
+
+
+________________________________________________________________________________
+8. Source-to-Landing Validation
+Test ID	Test Description	Method	Expected Result	Status
+Validation Activities:
+•	Record count comparison
+•	File size validation
+•	Checksum/hash comparison
+•	Schema validation
+•	Data type validation
+•	Mandatory field validation
+SQL Example:
+SELECT COUNT(*) FROM source table;
+SELECT COUNT(*) FROM landing table;
+
+
+
+
+Test ID	Test Description	Method	Expected Result	Status
+1.		Compare count summary of application Ids in Application Scorecard View and SAS Dataset	SQL Query:
+count_summary.sql
+	Count of Application IDs in Application Score Card View and SAS Dataset should be equal	Not an exact match. Application IDs identified which are either in SAS or in AWS
+
+Test Result:
+TestCase1- Count Summary.xlsx
+
+
+2.		Check for presence of application id for more than once in Application Scorecard View	SQL Query:
+aws_duplicates_check.sql
+	No duplicates	No duplicates found
+Test result:
+TestCase2- Duplicate Check.xlsx
+
+
+
+________________________________________
+8.1 Transformation Validation
+Checks:
+•	Business rule validation
+•	Derived field verification
+•	Aggregation correctness
+•	Null handling logic
+•	Join accuracy
+| Test ID | Business Rule | Validation Query | Expected Output | Status |
+
+
+
+SAS Dataset was converted into an AWS Table format. Subsequently, a comprehensive column-by-column comparison was conducted between the newly created SAS Dataset AWS Table and the Mortgage Application Scorecard View to verify data consistency and accuracy across both data sources.
+SAS Dataset AWS Table Name: sas_mortgage_application_scorecard
+Mortgage Application Scorecard View Name: mortgage_application_scorecard_view
+Testing Caveat:
+While comparing the mortgage_application_scorecard_view with the SAS dataset, please note that although the variables have the same or similar names, their data types in the view are aligned to those supported by Athena, which may differ from the original SAS data types (numeric or character). This alignment could result in minor differences in value representation or formatting during the comparison.
+Test ID	Business Rule	Validation Query	Expected Output	Status
+1.		Mortgage Application Scorecard View should have all the variables listed in the requirements document	mortgage_application_scorecard_view.sql
+	All variables to be onboarded with names in line with Santander Naming standards	All requested variables are onboarded in the view. Some additional variables have been added which can be used to identify any data issues.
+Test Result:
+Variables_applicationscorecardview.csv
+
+2.		Data accuracy and consistency between SAS Dataset and Mortgage Application Scorecard View	aws_vs_sas_field_comparision.sql
+All variables present in Mortgage Application Scorecard View must have values that are consistent with the corresponding variables in the existing SAS dataset for the same Application ID and Date Processed	Data consistency observed in most of the variables. Minor differences in value representation of some variable for the reason mentioned in Testing Caveat section
+
+Test Result: 
+aws_sas_sql_comparison.csv
+
+
+
+
+
+________________________________________________________________________________
+
+8.3 Target/Reporting Validation
+Checks:
+•	Aggregated totals reconcile with source
+•	Sampling validation
+•	Reconciliation reports
+•	KPI verification
+| Metric | Source Value | Target Value | Variance | Status |
+________________________________________
+9. Automated Data Quality Controls (AWS Services)
+If using AWS-native tools:
+AWS Glue Data Quality
+•	Rulesets defined
+•	Thresholds established
+•	Alerts configured
+AWS Deequ (if applicable)
+•	Constraint checks
+•	Profiling reports
+CloudWatch Monitoring
+•	Pipeline failures
+•	SLA monitoring
+•	Anomaly detection
+________________________________________
+10. Reconciliation Framework
+Reconciliation Type	Frequency	Owner	Tolerance Threshold
+			
+			
+			
+________________________________________
+11. Data Profiling Summary
+Include:
+•	Null % by column
+•	Distinct value counts
+•	Outlier detection
+•	Min/Max value ranges
+•	Distribution analysis
+Example Table:
+| Column | Null % | Min | Max | Distinct Count | Comments |
+________________________________________
+12. Defect Management
+| Defect ID | Severity | Description | Root Cause | Resolution | Status |
+Severity Levels:
+•	Critical – Regulatory/Financial impact
+•	High – Business impact
+•	Medium – Minor discrepancy
+•	Low – Cosmetic/format issue
+________________________________________
+13. Risk Log (Data-Related)
+| Risk ID | Description | Impact | Mitigation | Owner | Status |
+Examples:
+•	Schema drift
+•	Upstream source change
+•	Late file delivery
+•	Incorrect transformation logic
+________________________________________
+14. Entry & Exit Criteria
+Entry Criteria
+•	Data model approved
+•	Test data available
+•	AWS environments provisioned
+Exit Criteria
+•	100% critical test cases passed
+•	No open high-severity defects
+•	Reconciliation signed off
+•	Business owner approval obtained
+________________________________________
+15. Sign-Off
+This must be signed off by a Data Engineer, Data SME and Business SME.
+Name	Role		Date
+________________________________________
+16. Appendices
+•	A. Test Scripts
+•	B. SQL Validation Queries
+•	C. AWS Glue Rule Definitions
+•	D. Data Dictionary
+•	E. Architecture Diagram
+________________________________________
+Optional: Executive Summary Section (Recommended for Governance)
+Provide:
+•	Overall Data Quality Score
+•	Number of Tests Executed
+•	Pass/Fail %
+•	Open Risks
+•	Go/No-Go Recommendation
